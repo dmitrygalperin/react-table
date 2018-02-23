@@ -191,4 +191,6 @@ export default {
   NoDataComponent: PropTypes.oneOfType([PropTypes.func, PropTypes.element]),
   ResizerComponent: PropTypes.oneOfType([PropTypes.func, PropTypes.element]),
   PadRowComponent: PropTypes.oneOfType([PropTypes.func, PropTypes.element]),
+
+  contextMenuId: PropTypes.string,
 }

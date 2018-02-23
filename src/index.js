@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import classnames from 'classnames'
+import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu"
 //
 import _ from './utils'
 import Lifecycle from './lifecycle'
@@ -130,6 +131,7 @@ export default class ReactTable extends Methods(Lifecycle(Component)) {
       // Sorted Data
       sortedData,
       currentlyResizing,
+      contextMenuId,
     } = resolvedState
 
     // Pagination
@@ -527,241 +529,245 @@ export default class ReactTable extends Methods(Lifecycle(Component)) {
       const trProps = _.splitProps(
         getTrProps(finalState, rowInfo, undefined, this),
       )
-      return (
-        <TrGroupComponent key={rowInfo.nestingPath.join('_')} {...trGroupProps}>
-          <TrComponent
-            className={classnames(
-              trProps.className,
-              row._viewIndex % 2 ? '-even' : '-odd',
-            )}
-            style={trProps.style}
-            {...trProps.rest}
-          >
-            {allVisibleColumns.map((column, i2) => {
-              const resizedCol = resized.find(x => x.id === column.id) || {}
-              const show =
-                typeof column.show === 'function' ? column.show() : column.show
-              const width = _.getFirstDefined(
-                resizedCol.value,
-                column.width,
-                column.minWidth,
-              )
-              const maxWidth = _.getFirstDefined(
-                resizedCol.value,
-                column.width,
-                column.maxWidth,
-              )
-              const tdProps = _.splitProps(
-                getTdProps(finalState, rowInfo, column, this),
-              )
-              const columnProps = _.splitProps(
-                column.getProps(finalState, rowInfo, column, this),
-              )
-
-              const classes = [
-                tdProps.className,
-                column.className,
-                columnProps.className,
-              ]
-
-              const styles = {
-                ...tdProps.style,
-                ...column.style,
-                ...columnProps.style,
-              }
-
-              const cellInfo = {
-                ...rowInfo,
-                isExpanded,
-                column: { ...column },
-                value: rowInfo.row[column.id],
-                pivoted: column.pivoted,
-                expander: column.expander,
-                resized,
-                show,
-                width,
-                maxWidth,
-                tdProps,
-                columnProps,
-                classes,
-                styles,
-              }
-
-              const value = cellInfo.value
-
-              let useOnExpanderClick
-              let isBranch
-              let isPreview
-
-              const onExpanderClick = e => {
-                let newExpanded = _.clone(expanded)
-                if (isExpanded) {
-                  newExpanded = _.set(newExpanded, cellInfo.nestingPath, false)
-                } else {
-                  newExpanded = _.set(newExpanded, cellInfo.nestingPath, {})
-                }
-
-                return this.setStateWithData(
-                  {
-                    expanded: newExpanded,
-                  },
-                  () => (
-                    onExpandedChange &&
-                      onExpandedChange(newExpanded, cellInfo.nestingPath, e)
-                  ),
-                )
-              }
-
-              // Default to a standard cell
-              let resolvedCell = _.normalizeComponent(
-                column.Cell,
-                cellInfo,
-                value,
-              )
-
-              // Resolve Renderers
-              const ResolvedAggregatedComponent =
-                column.Aggregated ||
-                (!column.aggregate ? AggregatedComponent : column.Cell)
-              const ResolvedExpanderComponent =
-                column.Expander || ExpanderComponent
-              const ResolvedPivotValueComponent =
-                column.PivotValue || PivotValueComponent
-              const DefaultResolvedPivotComponent =
-                PivotComponent ||
-                (props => (
-                  <div>
-                    <ResolvedExpanderComponent {...props} />
-                    <ResolvedPivotValueComponent {...props} />
-                  </div>
-                ))
-              const ResolvedPivotComponent =
-                column.Pivot || DefaultResolvedPivotComponent
-
-              // Is this cell expandable?
-              if (cellInfo.pivoted || cellInfo.expander) {
-                // Make it expandable by defualt
-                cellInfo.expandable = true
-                useOnExpanderClick = true
-                // If pivoted, has no subRows, and does not have a subComponent,
-                // do not make expandable
-                if (cellInfo.pivoted && !cellInfo.subRows && !SubComponent) {
-                  cellInfo.expandable = false
-                }
-              }
-
-              if (cellInfo.pivoted) {
-                // Is this column a branch?
-                isBranch =
-                  rowInfo.row[pivotIDKey] === column.id && cellInfo.subRows
-                // Should this column be blank?
-                isPreview =
-                  pivotBy.indexOf(column.id) >
-                    pivotBy.indexOf(rowInfo.row[pivotIDKey]) && cellInfo.subRows
-                // Pivot Cell Render Override
-                if (isBranch) {
-                  // isPivot
-                  resolvedCell = _.normalizeComponent(
-                    ResolvedPivotComponent,
-                    {
-                      ...cellInfo,
-                      value: row[pivotValKey],
-                    },
-                    row[pivotValKey],
+      const trComponent = <TrComponent
+                className={classnames(
+                  trProps.className,
+                  row._viewIndex % 2 ? '-even' : '-odd',
+                )}
+                style={trProps.style}
+                {...trProps.rest}
+              >
+                {allVisibleColumns.map((column, i2) => {
+                  const resizedCol = resized.find(x => x.id === column.id) || {}
+                  const show =
+                    typeof column.show === 'function' ? column.show() : column.show
+                  const width = _.getFirstDefined(
+                    resizedCol.value,
+                    column.width,
+                    column.minWidth,
                   )
-                } else if (isPreview) {
-                  // Show the pivot preview
-                  resolvedCell = _.normalizeComponent(
-                    ResolvedAggregatedComponent,
+                  const maxWidth = _.getFirstDefined(
+                    resizedCol.value,
+                    column.width,
+                    column.maxWidth,
+                  )
+                  const tdProps = _.splitProps(
+                    getTdProps(finalState, rowInfo, column, this),
+                  )
+                  const columnProps = _.splitProps(
+                    column.getProps(finalState, rowInfo, column, this),
+                  )
+
+                  const classes = [
+                    tdProps.className,
+                    column.className,
+                    columnProps.className,
+                  ]
+
+                  const styles = {
+                    ...tdProps.style,
+                    ...column.style,
+                    ...columnProps.style,
+                  }
+
+                  const cellInfo = {
+                    ...rowInfo,
+                    isExpanded,
+                    column: { ...column },
+                    value: rowInfo.row[column.id],
+                    pivoted: column.pivoted,
+                    expander: column.expander,
+                    resized,
+                    show,
+                    width,
+                    maxWidth,
+                    tdProps,
+                    columnProps,
+                    classes,
+                    styles,
+                  }
+
+                  const value = cellInfo.value
+
+                  let useOnExpanderClick
+                  let isBranch
+                  let isPreview
+
+                  const onExpanderClick = e => {
+                    let newExpanded = _.clone(expanded)
+                    if (isExpanded) {
+                      newExpanded = _.set(newExpanded, cellInfo.nestingPath, false)
+                    } else {
+                      newExpanded = _.set(newExpanded, cellInfo.nestingPath, {})
+                    }
+
+                    return this.setStateWithData(
+                      {
+                        expanded: newExpanded,
+                      },
+                      () => (
+                        onExpandedChange &&
+                          onExpandedChange(newExpanded, cellInfo.nestingPath, e)
+                      ),
+                    )
+                  }
+
+                  // Default to a standard cell
+                  let resolvedCell = _.normalizeComponent(
+                    column.Cell,
                     cellInfo,
                     value,
                   )
-                } else {
-                  resolvedCell = null
-                }
-              } else if (cellInfo.aggregated) {
-                resolvedCell = _.normalizeComponent(
-                  ResolvedAggregatedComponent,
-                  cellInfo,
-                  value,
-                )
-              }
 
-              if (cellInfo.expander) {
-                resolvedCell = _.normalizeComponent(
-                  ResolvedExpanderComponent,
-                  cellInfo,
-                  row[pivotValKey],
-                )
-                if (pivotBy) {
-                  if (cellInfo.groupedByPivot) {
-                    resolvedCell = null
+                  // Resolve Renderers
+                  const ResolvedAggregatedComponent =
+                    column.Aggregated ||
+                    (!column.aggregate ? AggregatedComponent : column.Cell)
+                  const ResolvedExpanderComponent =
+                    column.Expander || ExpanderComponent
+                  const ResolvedPivotValueComponent =
+                    column.PivotValue || PivotValueComponent
+                  const DefaultResolvedPivotComponent =
+                    PivotComponent ||
+                    (props => (
+                      <div>
+                        <ResolvedExpanderComponent {...props} />
+                        <ResolvedPivotValueComponent {...props} />
+                      </div>
+                    ))
+                  const ResolvedPivotComponent =
+                    column.Pivot || DefaultResolvedPivotComponent
+
+                  // Is this cell expandable?
+                  if (cellInfo.pivoted || cellInfo.expander) {
+                    // Make it expandable by defualt
+                    cellInfo.expandable = true
+                    useOnExpanderClick = true
+                    // If pivoted, has no subRows, and does not have a subComponent,
+                    // do not make expandable
+                    if (cellInfo.pivoted && !cellInfo.subRows && !SubComponent) {
+                      cellInfo.expandable = false
+                    }
                   }
-                  if (!cellInfo.subRows && !SubComponent) {
-                    resolvedCell = null
+
+                  if (cellInfo.pivoted) {
+                    // Is this column a branch?
+                    isBranch =
+                      rowInfo.row[pivotIDKey] === column.id && cellInfo.subRows
+                    // Should this column be blank?
+                    isPreview =
+                      pivotBy.indexOf(column.id) >
+                        pivotBy.indexOf(rowInfo.row[pivotIDKey]) && cellInfo.subRows
+                    // Pivot Cell Render Override
+                    if (isBranch) {
+                      // isPivot
+                      resolvedCell = _.normalizeComponent(
+                        ResolvedPivotComponent,
+                        {
+                          ...cellInfo,
+                          value: row[pivotValKey],
+                        },
+                        row[pivotValKey],
+                      )
+                    } else if (isPreview) {
+                      // Show the pivot preview
+                      resolvedCell = _.normalizeComponent(
+                        ResolvedAggregatedComponent,
+                        cellInfo,
+                        value,
+                      )
+                    } else {
+                      resolvedCell = null
+                    }
+                  } else if (cellInfo.aggregated) {
+                    resolvedCell = _.normalizeComponent(
+                      ResolvedAggregatedComponent,
+                      cellInfo,
+                      value,
+                    )
                   }
-                }
-              }
 
-              const resolvedOnExpanderClick = useOnExpanderClick
-                ? onExpanderClick
-                : () => {}
+                  if (cellInfo.expander) {
+                    resolvedCell = _.normalizeComponent(
+                      ResolvedExpanderComponent,
+                      cellInfo,
+                      row[pivotValKey],
+                    )
+                    if (pivotBy) {
+                      if (cellInfo.groupedByPivot) {
+                        resolvedCell = null
+                      }
+                      if (!cellInfo.subRows && !SubComponent) {
+                        resolvedCell = null
+                      }
+                    }
+                  }
 
-              // If there are multiple onClick events, make sure they don't
-              // override eachother. This should maybe be expanded to handle all
-              // function attributes
-              const interactionProps = {
-                onClick: resolvedOnExpanderClick,
-              }
+                  const resolvedOnExpanderClick = useOnExpanderClick
+                    ? onExpanderClick
+                    : () => {}
 
-              if (tdProps.rest.onClick) {
-                interactionProps.onClick = e => {
-                  tdProps.rest.onClick(e, () => resolvedOnExpanderClick(e))
-                }
-              }
+                  // If there are multiple onClick events, make sure they don't
+                  // override eachother. This should maybe be expanded to handle all
+                  // function attributes
+                  const interactionProps = {
+                    onClick: resolvedOnExpanderClick,
+                  }
 
-              if (columnProps.rest.onClick) {
-                interactionProps.onClick = e => {
-                  columnProps.rest.onClick(e, () => resolvedOnExpanderClick(e))
-                }
-              }
+                  if (tdProps.rest.onClick) {
+                    interactionProps.onClick = e => {
+                      tdProps.rest.onClick(e, () => resolvedOnExpanderClick(e))
+                    }
+                  }
 
-              // Return the cell
-              return (
-                <TdComponent
-                  // eslint-disable-next-line react/no-array-index-key
-                  key={`${i2}-${column.id}`}
-                  className={classnames(
-                    classes,
-                    !show && 'hidden',
-                    cellInfo.expandable && 'rt-expandable',
-                    (isBranch || isPreview) && 'rt-pivot',
-                  )}
-                  style={{
-                    ...styles,
-                    flex: `${width} 0 auto`,
-                    width: _.asPx(width),
-                    maxWidth: _.asPx(maxWidth),
-                  }}
-                  {...tdProps.rest}
-                  {...columnProps.rest}
-                  {...interactionProps}
-                >
-                  {resolvedCell}
-                </TdComponent>
-              )
-            })}
-          </TrComponent>
-          {rowInfo.subRows &&
-            isExpanded &&
-            rowInfo.subRows.map((d, i) =>
-              makePageRow(d, i, rowInfo.nestingPath),
-            )}
-          {SubComponent &&
-            !rowInfo.subRows &&
-            isExpanded &&
-            SubComponent(rowInfo)}
-        </TrGroupComponent>
+                  if (columnProps.rest.onClick) {
+                    interactionProps.onClick = e => {
+                      columnProps.rest.onClick(e, () => resolvedOnExpanderClick(e))
+                    }
+                  }
+
+                  // Return the cell
+                  return (
+                    <TdComponent
+                      // eslint-disable-next-line react/no-array-index-key
+                      key={`${i2}-${column.id}`}
+                      className={classnames(
+                        classes,
+                        !show && 'hidden',
+                        cellInfo.expandable && 'rt-expandable',
+                        (isBranch || isPreview) && 'rt-pivot',
+                      )}
+                      style={{
+                        ...styles,
+                        flex: `${width} 0 auto`,
+                        width: _.asPx(width),
+                        maxWidth: _.asPx(maxWidth),
+                      }}
+                      {...tdProps.rest}
+                      {...columnProps.rest}
+                      {...interactionProps}
+                    >
+                      {resolvedCell}
+                    </TdComponent>
+                  )
+                })}
+              </TrComponent>
+      return (
+          <TrGroupComponent key={rowInfo.nestingPath.join('_')} {...trGroupProps}>
+            {!!contextMenuId ? 
+              <ContextMenuTrigger collect={rowInfo => {return rowInfo.row} } id={contextMenuId}>{trComponent}</ContextMenuTrigger> : 
+              {trComponent} 
+            }
+            {rowInfo.subRows &&
+              isExpanded &&
+              rowInfo.subRows.map((d, i) =>
+                makePageRow(d, i, rowInfo.nestingPath),
+              )}
+            {SubComponent &&
+              !rowInfo.subRows &&
+              isExpanded &&
+              SubComponent(rowInfo)}
+          </TrGroupComponent>
       )
     }
 
