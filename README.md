@@ -1,3 +1,16 @@
+##This is basically just react-table and react-contextmenu frankensteined together
+Right click on a table row to pop up a context menu
+Usage:
+```javascript
+<ReactTable
+  ...
+  contextMenuId='<CONTEXT_MENU_ID>'
+  collect='<METHOD_TO_COLLECT_ROW_INFO>'
+  ...
+/>
+```
+
+
 <div style="text-align:center;">
   <a href="https://github.com/react-tools/react-table" target="\_parent"><img src="https://github.com/react-tools/media/raw/master/logo-react-table.png" alt="React Table Logo" style="width:450px;"/></a>
 </div>

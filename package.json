@@ -1,6 +1,6 @@
 {
-  "name": "react-table",
-  "version": "6.7.6",
+  "name": "react-table-contextmenu",
+  "version": "6.7.7",
   "description": "A fast, lightweight, opinionated table and datagrid built on React",
   "license": "MIT",
   "homepage": "https://github.com/react-tools/react-table#readme",
@@ -27,9 +27,9 @@
   ],
   "scripts": {
     "build:cjs": "babel src --out-dir lib --source-maps inline",
-    "build:es": "BABEL_ENV=es babel src --out-dir es --source-maps inline",
-    "build:umd": "BABEL_ENV=umd rollup -c",
-    "build:umd-min": "BABEL_ENV=umd NODE_ENV=production rollup -c",
+    "build:es": "SET BABEL_ENV=es babel src --out-dir es --source-maps inline",
+    "build:umd": "SET BABEL_ENV=umd rollup -c",
+    "build:umd-min": "SET BABEL_ENV=umd NODE_ENV=production rollup -c",
     "build:css": "rimraf react-table.css && stylus src/index.styl --compress -o react-table.css && yarn css:autoprefix",
     "css:autoprefix": "postcss --use autoprefixer react-table.css -r",
     "watch": "npm-run-all --parallel watch:*",
@@ -43,10 +43,12 @@
     "docs:build": "yarn build && cd docs && yarn && yarn build"
   },
   "dependencies": {
-    "classnames": "^2.2.5"
+    "classnames": "^2.2.5",
+    "react-contextmenu": "^2.9.2"
   },
   "peerDependencies": {
-    "react": "^15.x.x || ^16.x.x"
+    "react": "^16.2.0",
+    "react-dom": "^16.2.0"
   },
   "devDependencies": {
     "autoprefixer": "^6.7.0",
@@ -68,8 +70,6 @@
     "onchange": "^3.0.2",
     "postcss-cli": "^2.6.0",
     "prop-types": "^15.6.0",
-    "react": "^15.4.2",
-    "react-dom": "^15.4.2",
     "react-json-tree": "^0.10.9",
     "rimraf": "^2.6.1",
     "rollup": "^0.55.3",
